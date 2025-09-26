@@ -36,7 +36,7 @@ const RightSide = styled.div`
 
 const Title = styled.h2`
   font-size: 32px;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
   align-self: center;
 `;
 
@@ -64,7 +64,7 @@ const Options = styled.div`
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 `;
 
 const Remember = styled.span`
@@ -89,12 +89,23 @@ const Button = styled.button`
   border: none;
   cursor: pointer;
   margin-bottom: 20px;
+
+  &:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+  }
 `;
 
 const Footer = styled.p`
   text-align: center;
   font-size: 14px;
   color: #ccc;
+`;
+
+const ErrorMsg = styled.p`
+  color: #ff4d4d;
+  text-align: center;
+  margin-bottom: 15px;
 `;
 
 const PopupOverlay = styled.div`
@@ -158,7 +169,6 @@ export default function Login() {
 
   const handleEmpresaClick = () => navigate("/CadastroE");
   const handleUsuarioClick = () => navigate("/CadastroU");
-  const handleEntrar = () => navigate("/vagas");
   const handleCadastrarClick = () => setShowPopup(true);
   const handleClosePopup = () => setShowPopup(false);
 
@@ -167,8 +177,10 @@ export default function Login() {
     setLoading(true);
     setErro("");
 
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+
     try {
-      const resposta = await fetch("http://localhost:3000/usuarios/login", {
+      const resposta = await fetch(`${API_URL}/usuarios/login`, {
         method: "POST",
         headers: {
           "Content-type": "application/json",
@@ -176,15 +188,12 @@ export default function Login() {
         body: JSON.stringify({ email, senha }),
       });
 
-      console.log("Resposta do servidor:", resposta);
-
       const dados = await resposta.json();
 
       if (resposta.ok) {
-        alert("Login realizado com sucesso!");
         navigate("/vagas");
       } else {
-        setErro(dados.message || "Erro ao fazer Login. Tente novamente.");
+        setErro(dados.message || "Erro ao fazer login. Tente novamente.");
       }
     } catch (e) {
       console.error("Falha ao conectar a API:", e);
@@ -196,31 +205,33 @@ export default function Login() {
 
   return (
     <form onSubmit={execSubmit}>
-    <Container>
-      {/* Lado esquerdo */}
-      <LeftSide>
-        <Image src={fotoLogin} />
-      </LeftSide>
+      <Container>
 
-      {/* Lado direito */}
-      <RightSide>
-        <Title>LOGIN</Title>
+        <LeftSide>
+          <Image src={fotoLogin} alt="Tela de login" />
+        </LeftSide>
 
-        <InputGroup>
-          <Label>E-mail</Label>
-          <Input 
+        <RightSide>
+          <Title>LOGIN</Title>
+
+          {erro && <ErrorMsg>{erro}</ErrorMsg>}
+
+          <InputGroup>
+            <Label htmlFor="email">E-mail</Label>
+            <Input
               id="email"
               name="email"
               value={email}
               type="email"
               placeholder="Digite seu E-mail..."
               onChange={(e) => setEmail(e.target.value)}
-              required  />
-        </InputGroup>
+              required
+            />
+          </InputGroup>
 
-        <InputGroup>
-          <Label>Senha</Label>
-          <Input 
+          <InputGroup>
+            <Label htmlFor="senha">Senha</Label>
+            <Input
               id="senha"
               name="senha"
               value={senha}
@@ -228,45 +239,46 @@ export default function Login() {
               placeholder="Digite sua Senha..."
               onChange={(e) => setSenha(e.target.value)}
               required
-               />
-        </InputGroup>
+            />
+          </InputGroup>
 
-        <Options>
-          <label>
-            <input type="checkbox" />
-            <Remember>Lembrar de Mim</Remember>
-          </label>
-          <LinkGreen href="#">Esqueceu a Senha?</LinkGreen>
-        </Options>
+          <Options>
+            <label>
+              <input type="checkbox" />
+              <Remember>Lembrar de Mim</Remember>
+            </label>
+            <LinkGreen href="#">Esqueceu a Senha?</LinkGreen>
+          </Options>
 
-        <Button type="submit">ENTRAR</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Carregando..." : "ENTRAR"}
+          </Button>
 
-        <Footer>
-          Não Tem Uma Conta?{" "}
-          <LinkGreen as="span" onClick={handleCadastrarClick}>
-            Cadastrar-se
-          </LinkGreen>
-        </Footer>
-      </RightSide>
+          <Footer>
+            Não tem uma conta?{" "}
+            <LinkGreen as="span" onClick={handleCadastrarClick}>
+              Cadastrar-se
+            </LinkGreen>
+          </Footer>
+        </RightSide>
 
-      {/* Popup */}
-      {showPopup && (
-        <PopupOverlay>
-          <Popup>
-            <Close onClick={handleClosePopup}>Fechar</Close>
-            <PopupText>
-              Antes de fazer o cadastro, nos diga o que você é!
-            </PopupText>
-            <PopupButton onClick={handleEmpresaClick}>
-              Sou uma empresa
-            </PopupButton>
-            <PopupButton onClick={handleUsuarioClick}>
-              Sou um estagiário
-            </PopupButton>
-          </Popup>
-        </PopupOverlay>
-      )}
-    </Container>
+        {showPopup && (
+          <PopupOverlay onClick={handleClosePopup}>
+            <Popup onClick={(e) => e.stopPropagation()}>
+              <Close onClick={handleClosePopup}>Fechar</Close>
+              <PopupText>
+                Antes de fazer o cadastro, nos diga o que você é!
+              </PopupText>
+              <PopupButton onClick={handleEmpresaClick}>
+                Sou uma empresa
+              </PopupButton>
+              <PopupButton onClick={handleUsuarioClick}>
+                Sou um estagiário
+              </PopupButton>
+            </Popup>
+          </PopupOverlay>
+        )}
+      </Container>
     </form>
   );
 }

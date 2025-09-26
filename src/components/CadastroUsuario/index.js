@@ -17,8 +17,15 @@ export default function CadastroUsuario() {
 
   const execSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true);
     setErro("");
+
+    // ✅ Validação extra antes do envio
+    if (cpf_cnpj.length !== 11) {
+      setErro("O CPF deve conter exatamente 11 dígitos.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
@@ -28,8 +35,6 @@ export default function CadastroUsuario() {
         },
         body: JSON.stringify({ nome, email, cpf_cnpj, senha }),
       });
-
-      console.log("Resposta do servidor:", resposta);
 
       const dados = await resposta.json();
 
@@ -92,7 +97,14 @@ export default function CadastroUsuario() {
               style={styles.input}
               type="text"
               placeholder="Digite seu CPF..."
-              onChange={(e) => setCpf(e.target.value)}
+              maxLength={11} // máximo 11 caracteres
+              pattern="\d{11}" // ✅ validação HTML nativa
+              title="O CPF deve conter exatamente 11 dígitos numéricos."
+              onChange={(e) => {
+                // permite apenas números
+                const valor = e.target.value.replace(/\D/g, "");
+                setCpf(valor);
+              }}
               required
             />
           </div>
@@ -180,6 +192,5 @@ const styles = {
     textDecoration: "none",
     marginTop: "15px",
     fontSize: "14px",
-    cursor: "pointer",
   },
 };

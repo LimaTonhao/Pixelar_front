@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function CadastroUsuario() {
   const [nome, setNome] = useState("");
-  const [cpf_cnpj, setCnpj] = useState("");
+  const [cpf_cnpj, setCpf] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
@@ -17,8 +17,14 @@ export default function CadastroUsuario() {
 
   const execSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true);
     setErro("");
+
+    if (cpf_cnpj.length !== 14) {
+      setErro("O CNPJ deve conter exatamente 14 dígitos.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
@@ -28,8 +34,6 @@ export default function CadastroUsuario() {
         },
         body: JSON.stringify({ nome, email, cpf_cnpj, senha }),
       });
-
-      console.log("Resposta do servidor:", resposta);
 
       const dados = await resposta.json();
 
@@ -63,7 +67,7 @@ export default function CadastroUsuario() {
               value={nome}
               style={styles.input}
               type="text"
-              placeholder="Digite seu Nome..."
+              placeholder="Digite o nome da Empresa..."
               onChange={(e) => setNome(e.target.value)}
               required
             />
@@ -91,8 +95,14 @@ export default function CadastroUsuario() {
               value={cpf_cnpj}
               style={styles.input}
               type="text"
-              placeholder="Digite seu CNPJ..."
-              onChange={(e) => setCnpj(e.target.value)}
+              placeholder="Digite o CPNJ..."
+              maxLength={14}
+              pattern="\d{14}"
+              title="O CNPJ deve conter exatamente 14 dígitos numéricos."
+              onChange={(e) => {
+                const valor = e.target.value.replace(/\D/g, "");
+                setCpf(valor);
+              }}
               required
             />
           </div>
@@ -123,7 +133,6 @@ export default function CadastroUsuario() {
     </form>
   );
 }
-
 
 const styles = {
   page: {
@@ -183,4 +192,3 @@ const styles = {
     fontSize: "18px",
   },
 };
-

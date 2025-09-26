@@ -41,9 +41,11 @@ export default function PaginalInicial() {
     try {
       const resposta = await fetch(`http://localhost:3000/vagas/criar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          id_usuario: 1,
+          id_usuario: 64,
           titulo,
           descricao,
           requisitos,
@@ -69,7 +71,7 @@ export default function PaginalInicial() {
       setSalario("");
     } catch (error) {
       console.error(error);
-      alert("Erro ao criar vaga");
+      alert("Erro ao criar vaga", error.message);
     }
   };
 
@@ -94,6 +96,7 @@ export default function PaginalInicial() {
   };
 
   return (
+    
     <PaginaContainer>
       {/* NAVBAR */}
       <BarraNavegacao>
@@ -145,7 +148,7 @@ export default function PaginalInicial() {
                   </span>
                   <h2 style={{ marginBottom: "15px" }}>Nova Vaga</h2>
 
-                  <form onSubmit={(e) => handleCriarVaga(e, close)}>
+                  <form>
                     <InputForm
                       style={styles.caixaTexto}
                       type="text"
@@ -196,7 +199,7 @@ export default function PaginalInicial() {
                       required
                     />
 
-                    <BotaoSubmit type="submit">Salvar</BotaoSubmit>
+                    <BotaoSubmit type="submit" onClick={(e) => handleCriarVaga(e, close)} >Salvar</BotaoSubmit>
                   </form>
                 </div>
               </div>

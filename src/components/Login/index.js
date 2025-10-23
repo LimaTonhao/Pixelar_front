@@ -33,10 +33,18 @@ const RightSide = styled.div`
   justify-content: center;
   padding: 0 50px;
 `;
+const SuccessBox = styled.div`
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 15px;
+`;
 
 const Title = styled.h2`
   font-size: 32px;
-  margin-bottom: 20px;
+  margin-bottom: 40px;
   align-self: center;
 `;
 
@@ -64,7 +72,7 @@ const Options = styled.div`
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 `;
 
 const Remember = styled.span`
@@ -89,23 +97,12 @@ const Button = styled.button`
   border: none;
   cursor: pointer;
   margin-bottom: 20px;
-
-  &:disabled {
-    background-color: #666;
-    cursor: not-allowed;
-  }
 `;
 
 const Footer = styled.p`
   text-align: center;
   font-size: 14px;
   color: #ccc;
-`;
-
-const ErrorMsg = styled.p`
-  color: #ff4d4d;
-  text-align: center;
-  margin-bottom: 15px;
 `;
 
 const PopupOverlay = styled.div`
@@ -161,14 +158,23 @@ const PopupButton = styled.button`
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [erro, setErro] = useState("");
+  const [error, setErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const [showPopup, setShowPopup] = useState(false);
   const navigate = useNavigate();
 
-  const handleEmpresaClick = () => navigate("/CadastroE");
-  const handleUsuarioClick = () => navigate("/CadastroU");
+  const handleEmpresaClick = () => {
+    localStorage.removeItem("usuarioLogado");
+    navigate("/CadastroE");
+  };
+
+  const handleUsuarioClick = () => {
+    localStorage.removeItem("usuarioLogado");
+    navigate("/CadastroU");
+  };
+
   const handleCadastrarClick = () => setShowPopup(true);
   const handleClosePopup = () => setShowPopup(false);
 
@@ -177,10 +183,8 @@ export default function Login() {
     setLoading(true);
     setErro("");
 
-    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
-
     try {
-      const resposta = await fetch(`${API_URL}/usuarios/login`, {
+      const resposta = await fetch("http://localhost:3000/usuarios/login", {
         method: "POST",
         headers: {
           "Content-type": "application/json",
@@ -188,12 +192,30 @@ export default function Login() {
         body: JSON.stringify({ email, senha }),
       });
 
+      console.log("Resposta do servidor:", resposta);
+
       const dados = await resposta.json();
 
-      if (resposta.ok) {
-        navigate("/vagas");
+      if (resposta.ok && dados.usuario) {
+        setSuccess(true);
+
+        localStorage.setItem(
+          "usuarioLogado",
+          JSON.stringify({
+            ...dados.usuario,
+            token: dados.token,
+          })
+        );
+
+        setTimeout(() => {
+          if (dados.usuario.tipo_usuario === "avaliador") {
+            navigate("/vagas");
+          } else {
+            navigate("/vagasU");
+          }
+        }, 1000);
       } else {
-        setErro(dados.message || "Erro ao fazer login. Tente novamente.");
+        setErro(dados.message || "Erro ao fazer Login. Tente novamente.");
       }
     } catch (e) {
       console.error("Falha ao conectar a API:", e);
@@ -204,20 +226,17 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={execSubmit}>
+    <form>
       <Container>
-
         <LeftSide>
-          <Image src={fotoLogin} alt="Tela de login" />
+          <Image src={fotoLogin} />
         </LeftSide>
 
         <RightSide>
           <Title>LOGIN</Title>
 
-          {erro && <ErrorMsg>{erro}</ErrorMsg>}
-
           <InputGroup>
-            <Label htmlFor="email">E-mail</Label>
+            <Label>E-mail</Label>
             <Input
               id="email"
               name="email"
@@ -230,7 +249,7 @@ export default function Login() {
           </InputGroup>
 
           <InputGroup>
-            <Label htmlFor="senha">Senha</Label>
+            <Label>Senha</Label>
             <Input
               id="senha"
               name="senha"
@@ -249,13 +268,18 @@ export default function Login() {
             </label>
             <LinkGreen href="#">Esqueceu a Senha?</LinkGreen>
           </Options>
-
-          <Button type="submit" disabled={loading}>
-            {loading ? "Carregando..." : "ENTRAR"}
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
+          {success && <SuccessBox>Login bem-sucedido</SuccessBox>}
+          <Button onClick={execSubmit} disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
           </Button>
 
           <Footer>
-            Não tem uma conta?{" "}
+            Não Tem Uma Conta?{" "}
             <LinkGreen as="span" onClick={handleCadastrarClick}>
               Cadastrar-se
             </LinkGreen>
@@ -263,8 +287,8 @@ export default function Login() {
         </RightSide>
 
         {showPopup && (
-          <PopupOverlay onClick={handleClosePopup}>
-            <Popup onClick={(e) => e.stopPropagation()}>
+          <PopupOverlay>
+            <Popup>
               <Close onClick={handleClosePopup}>Fechar</Close>
               <PopupText>
                 Antes de fazer o cadastro, nos diga o que você é!

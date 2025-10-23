@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function CadastroUsuario() {
   const [nome, setNome] = useState("");
-  const [cpf_cnpj, setCpf] = useState("");
+  const [cpf_cnpj, setCnpj] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
@@ -17,14 +17,8 @@ export default function CadastroUsuario() {
 
   const execSubmit = async (event) => {
     event.preventDefault();
-    setErro("");
-
-    if (cpf_cnpj.length !== 14) {
-      setErro("O CNPJ deve conter exatamente 14 dígitos.");
-      return;
-    }
-
     setLoading(true);
+    setErro("");
 
     try {
       const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
@@ -34,6 +28,8 @@ export default function CadastroUsuario() {
         },
         body: JSON.stringify({ nome, email, cpf_cnpj, senha }),
       });
+
+      console.log("Resposta do servidor:", resposta);
 
       const dados = await resposta.json();
 
@@ -67,7 +63,7 @@ export default function CadastroUsuario() {
               value={nome}
               style={styles.input}
               type="text"
-              placeholder="Digite o nome da Empresa..."
+              placeholder="Digite seu Nome..."
               onChange={(e) => setNome(e.target.value)}
               required
             />
@@ -95,14 +91,8 @@ export default function CadastroUsuario() {
               value={cpf_cnpj}
               style={styles.input}
               type="text"
-              placeholder="Digite o CPNJ..."
-              maxLength={14}
-              pattern="\d{14}"
-              title="O CNPJ deve conter exatamente 14 dígitos numéricos."
-              onChange={(e) => {
-                const valor = e.target.value.replace(/\D/g, "");
-                setCpf(valor);
-              }}
+              placeholder="Digite seu CNPJ..."
+              onChange={(e) => setCnpj(e.target.value)}
               required
             />
           </div>

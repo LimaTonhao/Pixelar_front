@@ -2,35 +2,69 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Logo from "../../../img/logo.png";
-
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import PillNav from "../../componentesMenu/PillNav";
+import { FiLogOut } from "react-icons/fi";
+import { VscAccount } from "react-icons/vsc";
+import Dock from "../../componentesMenu/Dock";
 export default function Dashboard() {
   const navigate = useNavigate();
 
   const handleVagas = () => navigate("/vagas");
   const handleCandidatos = () => navigate("/candidatos");
-   const handlePerfil = () => {
+  const handlePerfil = () => {
     navigate("/perfilE");
   };
+  const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
+  if (!usuario) {
+    navigate("/login");
+    return;
+  }
+  const handleLogout = () => {
+    localStorage.removeItem("usuarioLogado");
+    setTimeout(() => navigate("/"), 500);
+  };
+  const BarraNav = styled.div`
+    background-color: rgba(112, 0, 216, 0);
+    display: flex;
+    align-items: center;
+    padding: 10px 30px;
+    justify-content: center;
+  `;
+  const items = [
+    {
+      icon: <VscAccount size={18} />,
+      label: "Perfil",
+      onClick: () => handlePerfil(),
+    },
+    {
+      icon: <FiLogOut size={18} />,
+      label: "Sair",
+      onClick: () => handleLogout(),
+    },
+  ];
 
   return (
     <PaginaContainer>
-      {/* NAVBAR */}
-      <BarraNavegacao>
-        <LogoContainer>
-          <ImagemLogo src={Logo} alt="Logo" />
-        </LogoContainer>
-
-        <ItensNav>
-          <BotaoNav onClick={handleVagas}>Vagas</BotaoNav>
-          <BotaoNav ativo>Dashboard</BotaoNav>
-          <BotaoNav onClick={handleCandidatos}>Candidatos</BotaoNav>
-        </ItensNav>
-
-        <InfoUsuario onClick={handlePerfil}>
-          <NomeUsuario>Usuário</NomeUsuario>
-          <Avatar>👤</Avatar>
-        </InfoUsuario>
-      </BarraNavegacao>
+      <BarraNav>
+        <PillNav
+          logo={Logo}
+          logoAlt="Company Logo"
+          items={[
+            { label: "Home", href: "/vagas" },
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Candidatos", href: "/candidatos" },
+          ]}
+          activeHref="/dashboard"
+          className="custom-nav"
+          ease="power2.easeOut"
+          baseColor="#7000d8"
+          pillColor="#ffffff"
+          hoveredPillTextColor="#ffffff"
+          pillTextColor="#000000"
+        />
+      </BarraNav>
 
       {/* FILTROS */}
       <Filtros>
@@ -127,77 +161,35 @@ export default function Dashboard() {
           </Alertas>
         </PainelPequeno>
       </SecaoInferior>
+      <DockWrapper>
+        <Dock
+          items={items}
+          panelHeight={68}
+          baseItemSize={50}
+          magnification={70}
+        />
+      </DockWrapper>
     </PaginaContainer>
   );
 }
 
 /* ---------- ESTILOS ---------- */
+const DockWrapper = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: transparent;
+  z-index: 1000;
+`;
 
 const PaginaContainer = styled.div`
   font-family: Arial, sans-serif;
   background-color: #ceceffff;
   min-height: 100vh;
 `;
-
-const BarraNavegacao = styled.div`
-  background-color: #7000d8;
-  display: flex;
-  align-items: center;
-  padding: 10px 30px;
-  justify-content: space-between;
-  margin-bottom: 30px;
-
-`;
-
-const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const ImagemLogo = styled.img`
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-`;
-
-const ItensNav = styled.div`
-  display: flex;
-  gap: 15px;
-`;
-
-const BotaoNav = styled.button`
-  background-color: ${(props) => (props.ativo ? "#000" : "#b188ff")};
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #000;
-  }
-`;
-
-const InfoUsuario = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-`;
-
-const NomeUsuario = styled.span`
-  font-size: 12px;
-  color: #ffefff;
-`;
-
-const Avatar = styled.div`
-  background-color: #d2bfff;
-  border-radius: 50%;
-  padding: 10px;
-  font-size: 18px;
-`;
-
 /* FILTROS */
 const Filtros = styled.div`
   display: flex;
@@ -205,6 +197,7 @@ const Filtros = styled.div`
   margin-bottom: 30px;
   justify-content: center;
   align-items: center;
+  margin-top: 60px;
 `;
 
 const Rotulo = styled.label`
@@ -320,4 +313,79 @@ const Alertas = styled.div`
   padding: 10px;
   border-radius: 6px;
   font-size: 14px;
+`;
+
+const TextoUsuario = styled.button`
+  padding: 5px;
+  color: #fff;
+  font-size: 20px;
+  background: transparent;
+  border: 0px;
+  font-weight: bold;
+`;
+
+const BarraNavegacao = styled.div`
+  background-color: #7000d8;
+  display: flex;
+  align-items: center;
+  padding: 10px 30px;
+  justify-content: space-between;
+`;
+
+const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const ImagemLogo = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  cursor: pointer;
+`;
+
+const ItensNav = styled.div`
+  display: flex;
+  gap: 15px;
+`;
+
+const BotaoNav = styled.button`
+  background-color: ${(props) => (props.ativo ? "#000" : "#b188ff")};
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  &:hover {
+    background-color: #000;
+  }
+`;
+
+const InfoUsuario = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+`;
+
+const Logout = styled.div`
+  padding: 10px;
+  border-radius: 10px;
+  background-color: rgba(207, 0, 0, 1);
+  width: 100px;
+  text-align: center;
+  height: 40px;
+  padding: 5px;
+  color: #fff;
+  font-size: 20px;
+  border: 0px;
+  font-weight: bold;
+`;
+
+const Avatar = styled.div`
+  background-color: #d2bfff;
+  border-radius: 50%;
+  padding: 10px;
+  font-size: 18px;
 `;

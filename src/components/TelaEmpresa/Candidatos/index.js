@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import Logo from "../../../img/logo.png";
 import { FaPlus, FaCommentAlt } from "react-icons/fa";
-
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import PillNav from "../../componentesMenu/PillNav";
+import { FiLogOut } from "react-icons/fi";
+import { VscAccount } from "react-icons/vsc";
+import Dock from "../../componentesMenu/Dock";
 import Popup from "reactjs-popup";
 import "reactjs-popup/dist/index.css";
-
-// ...
 
 const CartaoCandidato = styled.div`
   display: flex;
@@ -59,14 +62,14 @@ const CandidaturaT = styled.h2`
   margin-bottom: 0;
   font-size: 30px;
 `;
-// Container principal (abaixo da navbar)
+
 const Container = styled.div`
   display: flex;
   height: calc(100vh - 60px); /* ocupa a tela inteira menos a navbar */
   font-family: Arial, sans-serif;
+  margin-top: 30px;
 `;
 
-// Sidebar
 const BarraLateral = styled.div`
   width: 300px;
   background: linear-gradient(to bottom, #2d007d, #512b90);
@@ -75,10 +78,12 @@ const BarraLateral = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
+  margin-left: 5px;
   overflow-y: auto; /* scroll só aqui se necessário */
+  border-radius: 10px;
+  margin-bottom: 5px;
 `;
 
-// Lista de vagas
 const ListaVagas = styled.div`
   display: flex;
   gap: 10px;
@@ -120,9 +125,12 @@ const AreaChat = styled.div`
   background: #fff;
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 0;
+  margin-left: 10px;
+  margin-right: 10px;
   border-radius: 0 10px 10px 0;
   height: 100%;
+  margin-bottom: 5px;
   overflow-y: auto; /* garante que só o chat role, não a tela */
 `;
 
@@ -243,89 +251,6 @@ const BotaoEnviar = styled.button`
   font-weight: bold;
 `;
 
-// Barra de navegação
-const BarraNavegacao = styled.div`
-  background-color: #7000d8;
-  display: flex;
-  align-items: center;
-  padding: 10px 30px;
-  justify-content: space-between;
-`;
-
-const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const ImagemLogo = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  cursor: pointer;
-`;
-
-const ItensNav = styled.div`
-  display: flex;
-  gap: 15px;
-`;
-
-const BotaoNav = styled.button`
-  background-color: ${(props) => (props.ativo ? "#000" : "#b188ff")};
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #000;
-  }
-`;
-
-const InfoUsuario = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-`;
-
-const NomeUsuario = styled.span`
-  font-size: 12px;
-  color: #ffefff;
-`;
-
-const Avatar = styled.div`
-  background-color: #d2bfff;
-  border-radius: 50%;
-  padding: 10px;
-  font-size: 18px;
-`;
-
-const PopunContainer = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-`;
-
-// const Popup = styled.div`
-//   background: linear-gradient(135deg, #2c2cfc, #1e1e2f);
-//   padding: 30px;
-//   border-radius: 20px;
-//   width: 90%;
-//   max-width: 400px;
-//   color: #fff;
-//   text-align: center;
-//   position: relative;
-// `;
-
 const Fechar = styled.span`
   position: absolute;
   top: 10px;
@@ -374,245 +299,297 @@ const BotaoEditar = styled.button`
     background-color: #4b00cc;
   }
 `;
+
+const TextoUsuario = styled.button`
+  padding: 5px;
+  color: #fff;
+  font-size: 20px;
+  background: transparent;
+  border: 0px;
+  font-weight: bold;
+`;
+
+const BarraNavegacao = styled.div`
+  background-color: #7000d8;
+  display: flex;
+  align-items: center;
+  padding: 10px 30px;
+  justify-content: space-between;
+`;
+
+const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const ImagemLogo = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  cursor: pointer;
+`;
+
+const ItensNav = styled.div`
+  display: flex;
+  gap: 15px;
+`;
+
+const BotaoNav = styled.button`
+  background-color: ${(props) => (props.ativo ? "#000" : "#b188ff")};
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  &:hover {
+    background-color: #000;
+  }
+`;
+
+const InfoUsuario = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+`;
+
+const Logout = styled.div`
+  padding: 10px;
+  border-radius: 10px;
+  background-color: rgba(207, 0, 0, 1);
+  width: 100px;
+  text-align: center;
+  height: 40px;
+  padding: 5px;
+  color: #fff;
+  font-size: 20px;
+  border: 0px;
+  font-weight: bold;
+`;
+
+const Avatar = styled.div`
+  background-color: #d2bfff;
+  border-radius: 50%;
+  padding: 10px;
+  font-size: 18px;
+`;
+
+const DockWrapper = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 20%;
+  display: flex;
+  justify-content: center;
+  background: transparent;
+  z-index: 1000;
+`;
+
+const BarraNav = styled.div`
+  background-color: rgba(112, 0, 216, 0);
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  margin-top: 0;
+  justify-content: center;
+`;
 export default function Candidatos() {
-  const navigate = useNavigate();
   const handleVagas = () => navigate("/vagas");
   const handleDashboard = () => navigate("/dashboard");
   const handlePerfil = () => {
     navigate("/perfilE");
   };
+  const handleLogout = () => {
+    localStorage.removeItem("usuarioLogado");
+    setTimeout(() => navigate("/"), 500);
+  };
+  const navigate = useNavigate();
+  const [vagas, setVagas] = useState([]);
+  const [candidatos, setCandidatos] = useState([]);
+  const [erro, setErro] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const items = [
+    {
+      icon: <VscAccount size={18} />,
+      label: "Perfil",
+      onClick: () => handlePerfil(),
+    },
+    {
+      icon: <FiLogOut size={18} />,
+      label: "Sair",
+      onClick: () => handleLogout(),
+    },
+  ];
+  useEffect(() => {
+    const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
+    if (!usuario) {
+      navigate("/login");
+      return;
+    }
+
+    const fetchVagas = async () => {
+      try {
+        setLoading(true);
+        setErro(null);
+        const resposta = await fetch(
+          `http://localhost:3000/vagas/listarPorIdUsuario/${usuario.id}`
+        );
+        if (!resposta.ok) throw new Error("Erro ao buscar Vagas");
+        const dados = await resposta.json();
+        console.log("Respoista da API: ", dados);
+        setVagas(Array.isArray(dados) ? dados : [dados]);
+      } catch (error) {
+        setErro("Erro ao buscar Vagas");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVagas();
+    fetchCandidatos();
+  }, [navigate]);
+
+  const fetchCandidatos = async () => {
+    try {
+      setLoading(true);
+      setErro(null);
+      const resposta = await fetch(
+        `http://localhost:3000/candidaturas/listar`,
+        {
+          method: "GET",
+          // headers: {
+          //   Authorization: `Bearer ${usuario.token}`,
+          // },
+        }
+      );
+      if (!resposta.ok) {
+        throw new Error("Erro ao buscar Candidatos");
+      }
+      const dados = await resposta.json();
+      setCandidatos(dados);
+    } catch (error) {
+      setErro("Erro ao buscar Vagas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
 
   return (
     <>
-      <BarraNavegacao>
-        <LogoContainer>
-          <ImagemLogo src={Logo} alt="Logo" />
-        </LogoContainer>
-
-        <ItensNav>
-          <BotaoNav onClick={handleVagas}>Vagas</BotaoNav>
-          <BotaoNav onClick={handleDashboard}>Dashboard</BotaoNav>
-          <BotaoNav ativo>Candidatos</BotaoNav>
-        </ItensNav>
-
-        <InfoUsuario onClick={handlePerfil}>
-          <NomeUsuario>Usuário</NomeUsuario>
-          <Avatar>👤</Avatar>
-        </InfoUsuario>
-      </BarraNavegacao>
-
+      <BarraNav>
+        <DockWrapper>
+          <Dock
+            items={items}
+            panelHeight={68}
+            baseItemSize={50}
+            magnification={70}
+          />
+        </DockWrapper>
+        <PillNav
+          logo={Logo}
+          logoAlt="Company Logo"
+          items={[
+            { label: "Home", href: "/vagas" },
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Candidatos", href: "/candidatos" },
+          ]}
+          activeHref="/candidatos"
+          className="custom-nav"
+          ease="power2.easeOut"
+          baseColor="#7000d8"
+          pillColor="#ffffff"
+          hoveredPillTextColor="#ffffff"
+          pillTextColor="#000000"
+        />
+      </BarraNav>
       <Container>
         <BarraLateral>
           {/* LISTA DE VAGAS */}
           <ListaVagas>
-            <CartaoVaga>Desenvolvedor Frontend</CartaoVaga>
-            <CartaoVaga>Designer UI/UX</CartaoVaga>
-            <CartaoVaga>Analista de Dados</CartaoVaga>
-            <CartaoVaga>Gestor de Projetos</CartaoVaga>
-            <CartaoVaga>DevOps</CartaoVaga>
+            {loading ? (
+              <CartaoVaga>Carregando...</CartaoVaga>
+            ) : erro ? (
+              <CartaoVaga>{erro}</CartaoVaga>
+            ) : vagas.length === 0 ? (
+              <CartaoVaga>Nenhuma vaga encontrada</CartaoVaga>
+            ) : (
+              vagas.map((vaga) => (
+                <CartaoVaga key={vaga.id_vaga}>{vaga.titulo}</CartaoVaga>
+              ))
+            )}
           </ListaVagas>
 
           <ConteudoLateral>
             <Titulo>Candidatos</Titulo>
-            <CartaoCandidato>
-              <InfoCandidato>
-                <FotoCandidato src="https://randomuser.me/api/portraits/women/10.jpg" />
-                <NomePontuacao>
-                  <Nome>Maria</Nome>
-                  <Pontuacao2>Pontuação: 85%</Pontuacao2>
-                </NomePontuacao>
-              </InfoCandidato>
-              <Acoes>
-                {/* POPUP DETALHES */}
-                <Popup
-                  trigger={
-                    <IconeAcao>
-                      <FaPlus />
-                    </IconeAcao>
-                  }
-                  modal
-                  nested
-                  overlayStyle={{ background: "rgba(0,0,0,0.6)" }}
-                  contentStyle={{
-                    background: "transparent",
-                    border: "none",
-                    boxShadow: "none",
-                    padding: 0,
-                  }}
-                >
-                  {(close) => (
-                    <PopupCard>
-                      <Fechar onClick={close}>✖</Fechar>
-                      <CandidaturaT>Detalhe de Candidatura</CandidaturaT>
-                      <CandidaturaTitulo>Candidatura nº XXX</CandidaturaTitulo>
-                      <InfoBox>
-                        <p>
-                          Status: <b>Em andamento</b>
-                        </p>
-                        <p>Vaga: XXXXX</p>
-                        <p>Data: 12/09/2025</p>
-                        <Pontuacao>Pontuação: 85%</Pontuacao>
-                      </InfoBox>
-                      <BotaoEditar>Editar</BotaoEditar>
-                    </PopupCard>
-                  )}
-                </Popup>
+            {loading ? (
+              <p>Carregando...</p>
+            ) : erro ? (
+              <p>{erro}</p>
+            ) : candidatos.length === 0 ? (
+              <p>Nenhum candidato encontrado</p>
+            ) : (
+              candidatos.map((cand) => (
+                <CartaoCandidato key={cand.id_candidatura}>
+                  <InfoCandidato>
+                    <FotoCandidato
+                      src={
+                        cand.foto ||
+                        "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                      }
+                      alt={cand.nome}
+                    />
+                    <NomePontuacao>
+                      <Nome>{cand.nome}</Nome>
+                      <Pontuacao2>
+                        Pontuação: {cand.pontuacao || "N/A"}
+                      </Pontuacao2>
+                    </NomePontuacao>
+                  </InfoCandidato>
 
-                <IconeAcao>
-                  <FaCommentAlt />
-                </IconeAcao>
-              </Acoes>
-            </CartaoCandidato>
-            <CartaoCandidato>
-              {" "}
-              <InfoCandidato>
-                {" "}
-                <FotoCandidato src="https://randomuser.me/api/portraits/men/32.jpg" />{" "}
-                <NomePontuacao>
-                  {" "}
-                  <Nome>João</Nome> <Pontuacao2>Pontuação: 72%</Pontuacao2>{" "}
-                </NomePontuacao>{" "}
-              </InfoCandidato>{" "}
-              <Acoes>
-                <Popup
-                  trigger={
+                  <Acoes>
+                    <Popup
+                      trigger={
+                        <IconeAcao>
+                          <FaPlus />
+                        </IconeAcao>
+                      }
+                      modal
+                      nested
+                      overlayStyle={{ background: "rgba(0,0,0,0.6)" }}
+                      contentStyle={{
+                        background: "transparent",
+                        border: "none",
+                        boxShadow: "none",
+                        padding: 0,
+                      }}
+                    >
+                      {(close) => (
+                        <PopupCard>
+                          <Fechar onClick={close}>✖</Fechar>
+                          <h2>Detalhe de Candidatura</h2>
+                          <InfoBox>
+                            <p>
+                              Status: <b>{cand.status || "Em andamento"}</b>
+                            </p>
+                            <p>Vaga: {cand.vagatitulo || "XXXXX"}</p>
+                            <p>Data: {cand.data || "Sem data"}</p>
+                            <p>Pontuação: {cand.pontuacao || "N/A"}</p>
+                          </InfoBox>
+                          <BotaoEditar>Editar</BotaoEditar>
+                        </PopupCard>
+                      )}
+                    </Popup>
+
                     <IconeAcao>
-                      <FaPlus />
+                      <FaCommentAlt />
                     </IconeAcao>
-                  }
-                  modal
-                  nested
-                  overlayStyle={{ background: "rgba(0,0,0,0.6)" }}
-                  contentStyle={{
-                    background: "transparent",
-                    border: "none",
-                    boxShadow: "none",
-                    padding: 0,
-                  }}
-                >
-                  {(close) => (
-                    <PopupCard>
-                      <Fechar onClick={close}>✖</Fechar>
-                      <TituloDetalhe>Detalhe de Candidatura</TituloDetalhe>
-                      <CandidaturaTitulo>Candidatura nº XXX</CandidaturaTitulo>
-                      <InfoBox>
-                        <p>
-                          Status: <b>Em andamento</b>
-                        </p>
-                        <p>Vaga: XXXXX</p>
-                        <p>Data: 12/09/2025</p>
-                        <Pontuacao>Pontuação: 85%</Pontuacao>
-                      </InfoBox>
-                      <BotaoEditar>Editar</BotaoEditar>
-                    </PopupCard>
-                  )}
-                </Popup>{" "}
-                <IconeAcao>
-                  {" "}
-                  <FaCommentAlt />{" "}
-                </IconeAcao>{" "}
-              </Acoes>{" "}
-            </CartaoCandidato>{" "}
-            <CartaoCandidato>
-              {" "}
-              <InfoCandidato>
-                {" "}
-                <FotoCandidato src="https://randomuser.me/api/portraits/men/77.jpg" />{" "}
-                <NomePontuacao>
-                  {" "}
-                  <Nome>Carlos</Nome> <Pontuacao2>Pontuação: 90%</Pontuacao2>{" "}
-                </NomePontuacao>{" "}
-              </InfoCandidato>{" "}
-              <Acoes>
-                <Popup
-                  trigger={
-                    <IconeAcao>
-                      <FaPlus />
-                    </IconeAcao>
-                  }
-                  modal
-                  nested
-                  overlayStyle={{ background: "rgba(0,0,0,0.6)" }}
-                  contentStyle={{
-                    background: "transparent",
-                    border: "none",
-                    boxShadow: "none",
-                    padding: 0,
-                  }}
-                >
-                  {(close) => (
-                    <PopupCard>
-                      <Fechar onClick={close}>✖</Fechar>
-                      <TituloDetalhe>Detalhe de Candidatura</TituloDetalhe>
-                      <CandidaturaTitulo>Candidatura nº XXX</CandidaturaTitulo>
-                      <InfoBox>
-                        <p>
-                          Status: <b>Em andamento</b>
-                        </p>
-                        <p>Vaga: XXXXX</p>
-                        <p>Data: 12/09/2025</p>
-                        <Pontuacao>Pontuação: 85%</Pontuacao>
-                      </InfoBox>
-                      <BotaoEditar>Editar</BotaoEditar>
-                    </PopupCard>
-                  )}
-                </Popup>{" "}
-                <IconeAcao>
-                  {" "}
-                  <FaCommentAlt />{" "}
-                </IconeAcao>{" "}
-              </Acoes>{" "}
-            </CartaoCandidato>{" "}
-            <CartaoCandidato>
-              {" "}
-              <InfoCandidato>
-                {" "}
-                <FotoCandidato src="https://randomuser.me/api/portraits/men/12.jpg" />{" "}
-                <NomePontuacao>
-                  {" "}
-                  <Nome>Felipe</Nome> <Pontuacao2>Pontuação: 65%</Pontuacao2>{" "}
-                </NomePontuacao>{" "}
-              </InfoCandidato>{" "}
-              <Acoes>
-                <Popup
-                  trigger={
-                    <IconeAcao>
-                      <FaPlus />
-                    </IconeAcao>
-                  }
-                  modal
-                  nested
-                  overlayStyle={{ background: "rgba(0,0,0,0.6)" }}
-                  contentStyle={{
-                    background: "transparent",
-                    border: "none",
-                    boxShadow: "none",
-                    padding: 0,
-                  }}
-                >
-                  {(close) => (
-                    <PopupCard>
-                      <Fechar onClick={close}>✖</Fechar>
-                      <TituloDetalhe>Detalhe de Candidatura</TituloDetalhe>
-                      <CandidaturaTitulo>Candidatura nº XXX</CandidaturaTitulo>
-                      <InfoBox>
-                        <p>
-                          Status: <b>Em andamento</b>
-                        </p>
-                        <p>Vaga: XXXXX</p>
-                        <p>Data: 12/09/2025</p>
-                        <Pontuacao>Pontuação: 85%</Pontuacao>
-                      </InfoBox>
-                      <BotaoEditar>Editar</BotaoEditar>
-                    </PopupCard>
-                  )}
-                </Popup>{" "}
-                <IconeAcao>
-                  {" "}
-                  <FaCommentAlt />{" "}
-                </IconeAcao>{" "}
-              </Acoes>{" "}
-            </CartaoCandidato>
+                  </Acoes>
+                </CartaoCandidato>
+              ))
+            )}
           </ConteudoLateral>
         </BarraLateral>
 

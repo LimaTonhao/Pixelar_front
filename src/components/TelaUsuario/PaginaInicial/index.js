@@ -19,14 +19,17 @@ export default function VagasUsuario() {
   const [setorSelecionado, setSetorSelecionado] = useState("");
   const [salarioMaximo, setSalarioMaximo] = useState(0);
   const [maiorSalarioDisponivel, setMaiorSalarioDisponivel] = useState(0);
+  const [buscaTitulo, setBuscaTitulo] = useState("");
+
   //
   const navigate = useNavigate();
 
   //
   const vagasFiltradas = vagas.filter((v) => {
+  const tituloValido = v.titulo.toLowerCase().includes(buscaTitulo.toLowerCase());
   const salarioValido = !salarioMaximo || Number(v.salario) <= salarioMaximo;
   const setorValido = !setorSelecionado || v.setor === setorSelecionado;
-  return salarioValido && setorValido;
+  return tituloValido && salarioValido && setorValido;
 });
   //
 
@@ -57,8 +60,8 @@ export default function VagasUsuario() {
         setVagas(vagasComEmpresa);
         //
         const maiorSalario = Math.max(...vagasComEmpresa.map(v => Number(v.salario) || 0));
-setMaiorSalarioDisponivel(maiorSalario);
-setSalarioMaximo(maiorSalario); // já começa no máximo
+        setMaiorSalarioDisponivel(maiorSalario);
+        setSalarioMaximo(maiorSalario);
         const setoresUnicos = [...new Set(vagasComEmpresa.map((v) => v.setor))];
         setSetores(setoresUnicos);
         //
@@ -156,7 +159,7 @@ setSalarioMaximo(maiorSalario); // já começa no máximo
       <Conteudo>
         <BarraLateral>
           <TituloSidebar>Filtrar</TituloSidebar>
-          <Entrada type="text" placeholder="🔍 Pesquisar vaga" />
+          <Entrada type="text" placeholder="🔍 Pesquisar vaga" value={buscaTitulo} onChange={(e) => setBuscaTitulo(e.target.value)} />
           <Selecao
   value={setorSelecionado}
   onChange={(e) => setSetorSelecionado(e.target.value)}

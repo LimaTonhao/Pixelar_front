@@ -27,11 +27,13 @@ export default function PaginaInicial() {
   const [setorSelecionado, setSetorSelecionado] = useState("");
   const [salarioMaximo, setSalarioMaximo] = useState(0);
   const [maiorSalarioDisponivel, setMaiorSalarioDisponivel] = useState(0);
+  const [buscaTitulo, setBuscaTitulo] = useState("");
   //
   const vagasFiltradas = vagas.filter((v) => {
+  const tituloValido = v.titulo.toLowerCase().includes(buscaTitulo.toLowerCase());
   const salarioValido = !salarioMaximo || Number(v.salario) <= salarioMaximo;
   const setorValido = !setorSelecionado || v.setor === setorSelecionado;
-  return salarioValido && setorValido;
+  return tituloValido && salarioValido && setorValido;
   });
   //
 
@@ -326,7 +328,8 @@ setSalarioMaximo(maiorSalario); // já começa no máximo
       <Conteudo>
         <BarraLateral>
           <TituloSidebar>Filtrar</TituloSidebar>
-          <Entrada type="text" placeholder="🔍" />
+          <Entrada type="text" placeholder="🔍"  value={buscaTitulo}
+  onChange={(e) => setBuscaTitulo(e.target.value)} />
           <Selecao
   value={setorSelecionado}
   onChange={(e) => setSetorSelecionado(e.target.value)}

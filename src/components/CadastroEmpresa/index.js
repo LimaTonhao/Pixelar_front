@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import { BsJustify } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+
 // --- FUNÇÃO AUXILIAR DE CONVERSÃO DE ARQUIVO PARA BASE64 ---
-//Converte um objeto File (Imagem/PDF) em uma string Base64 Data URL
 const converterParaBase64 = (arquivo) => {
-  alert("converterParaBase64");
   return new Promise((resolver, rejeitar) => {
     const leitor = new FileReader();
     leitor.readAsDataURL(arquivo);
@@ -14,106 +12,96 @@ const converterParaBase64 = (arquivo) => {
   });
 };
 
-export default function CadastroUsuario() {
-  const [nome, setNome] = useState("");
-  const [cpf_cnpj, setCnpj] = useState("");
+export default function CadastroEmpresa() {
+  const [nomeEmpresa, setNomeEmpresa] = useState("");
+  const [cnpj, setCnpj] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [cargo, setCargo] = useState("");
+  const [areaAtuacao, setAreaAtuacao] = useState("");
+  const [foto, setFoto] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [foto, setFoto] = useState(null);
-
   const [success, setSuccess] = useState(false);
+
   const navigate = useNavigate();
 
   const handleVoltar = () => {
-    setTimeout(() => {
-      navigate("/");
-    }, 500);
+    navigate("/");
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFoto(URL.createObjectURL(file));
+      setFoto(file);
     }
   };
 
   const execSubmit = async (event) => {
-  event.preventDefault();
-  setLoading(true);
-  setError("");
-const cpf = cpf_cnpj
-  if (cpf.length !== 14) {
-    alert("❌| CPF inválido. O CPF deve conter 14 dígitos.");
-    setLoading(false);
-    return;
-  }
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
-  try {
-    let fotoBase64 = null;
-    if (foto) {
-      fotoBase64 = await converterParaBase64(foto);
-    }
-
-    const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nome,
-        email,
-        cpf_cnpj: cpf,
-        senha,
-        cargo,
-        foto: fotoBase64,
-      }),
-    });
-
-    const text = await resposta.text(); // pega a resposta bruta
-    console.log("Resposta bruta do servidor:", text);
-
-    let dados;
-    try {
-      dados = JSON.parse(text); // tenta converter em JSON
-    } catch (err) {
-      console.error("❌ O servidor não retornou JSON!");
-      alert("O backend está retornando HTML — verifique se a rota existe ou se o servidor caiu.");
+    if (cnpj.length !== 14) {
+      alert("❌| CNPJ inválido. O CNPJ deve conter 14 dígitos.");
+      setLoading(false);
       return;
     }
 
-    if (resposta.ok) {
-      setSuccess(true);
-      setTimeout(() => navigate("/"), 1000);
-    } else {
-      setError(dados.message || "Erro ao fazer o cadastro. Tente novamente.");
+    try {
+      let fotoBase64 = null;
+      if (foto) {
+        fotoBase64 = await converterParaBase64(foto);
+      }
+
+      const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: nomeEmpresa,
+          email,
+          cpf_cnpj: cnpj,
+          senha,
+          cargo: areaAtuacao, // pode ser trocado por "setor" ou "ramo" se preferir
+          foto: fotoBase64,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (resposta.ok) {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
+      } else {
+        setError(dados.message || "Erro ao fazer o cadastro. Tente novamente.");
+      }
+    } catch (e) {
+      console.error("Falha ao conectar a API:", e);
+      setError("Não foi possível conectar ao servidor.");
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    console.error("Falha ao conectar à API:", e);
-    setError("Não foi possível conectar ao servidor.");
-    alert(e.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div style={styles.background}>
       <form onSubmit={execSubmit} style={styles.container}>
-        <h2 style={styles.title}>CADASTRO</h2>
+        <h2 style={styles.title}>CADASTRO DE EMPRESA</h2>
 
         {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+        {success && <SuccessBox>Cadastro realizado com sucesso!</SuccessBox>}
 
         <div style={styles.inputGroup}>
           <label style={styles.label}>Nome da Empresa</label>
           <input
-            id="nome"
-            name="nome"
-            value={nome}
+            value={nomeEmpresa}
             style={styles.input}
             type="text"
-            placeholder="Digite seu Nome..."
-            onChange={(e) => setNome(e.target.value)}
+            placeholder="Digite o nome da empresa..."
+            onChange={(e) => setNomeEmpresa(e.target.value)}
             required
           />
         </div>
@@ -121,12 +109,10 @@ const cpf = cpf_cnpj
         <div style={styles.inputGroup}>
           <label style={styles.label}>E-mail</label>
           <input
-            id="email"
-            name="email"
             value={email}
             style={styles.input}
             type="email"
-            placeholder="Digite seu E-mail..."
+            placeholder="Digite o e-mail da empresa..."
             onChange={(e) => setEmail(e.target.value)}
             required
           />
@@ -135,27 +121,23 @@ const cpf = cpf_cnpj
         <div style={styles.inputGroup}>
           <label style={styles.label}>CNPJ</label>
           <input
-            id="cpf_cnpj"
-            name="cpf_cnpj"
-            value={cpf_cnpj}
+            value={cnpj}
             style={styles.input}
             type="text"
-            placeholder="Digite seu CNPJ..."
+            placeholder="Digite o CNPJ..."
             onChange={(e) => setCnpj(e.target.value)}
             required
           />
         </div>
 
         <div style={styles.inputGroup}>
-          <label style={styles.label}>Cargo</label>
+          <label style={styles.label}>Área de Atuação</label>
           <input
-            id="cargo"
-            name="cargo"
-            value={cargo}
+            value={areaAtuacao}
             style={styles.input}
             type="text"
-            placeholder="Digite seu cargo..."
-            onChange={(e) => setCargo(e.target.value)}
+            placeholder="Ex: Tecnologia, Logística, Saúde..."
+            onChange={(e) => setAreaAtuacao(e.target.value)}
             required
           />
         </div>
@@ -163,39 +145,34 @@ const cpf = cpf_cnpj
         <div style={styles.inputGroup}>
           <label style={styles.label}>Senha</label>
           <input
-            id="senha"
-            name="senha"
             value={senha}
             style={styles.input}
             type="password"
-            placeholder="Digite sua Senha..."
+            placeholder="Digite uma senha..."
             onChange={(e) => setSenha(e.target.value)}
             required
           />
         </div>
 
         <div style={styles.inputGroup}>
-          <label style={styles.label}>Foto de Perfil</label>
+          <label style={styles.label}>Logo da Empresa</label>
           <input
             type="file"
             accept="image/*"
-            // onChange={handleFileChange}
-            onChange={(e) => setFoto(e.target.files[0])}
+            onChange={handleFileChange}
             style={styles.inputFile}
           />
           {foto && (
-            <img src={foto} alt="Prévia da foto" style={styles.preview} />
+            <img
+              src={URL.createObjectURL(foto)}
+              alt="Prévia"
+              style={styles.preview}
+            />
           )}
         </div>
 
-        {error && (
-          <div className="alert alert-danger" role="alert">
-            {error}
-          </div>
-        )}
-        {success && <SuccessBox>Cadastro realizado com sucesso!</SuccessBox>}
-        <Button onClick={execSubmit} disabled={loading}>
-          {loading ? "Cadastrando..." : "CADASTRAR-SE"}
+        <Button type="submit" disabled={loading}>
+          {loading ? "Cadastrando..." : "CADASTRAR EMPRESA"}
         </Button>
 
         <a style={styles.backLink} onClick={handleVoltar}>
@@ -205,6 +182,7 @@ const cpf = cpf_cnpj
     </div>
   );
 }
+
 const Button = styled.button`
   width: 100%;
   padding: 14px;
@@ -216,12 +194,8 @@ const Button = styled.button`
   border: none;
   cursor: pointer;
   margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    padding: 12px;
-    font-size: 16px;
-  }
 `;
+
 const SuccessBox = styled.div`
   background-color: #d4edda;
   border: 1px solid #c3e6cb;
@@ -230,16 +204,14 @@ const SuccessBox = styled.div`
   padding: 10px;
   margin-bottom: 15px;
 `;
+
 const styles = {
   background: {
     backgroundColor: "#c4caffff",
     minHeight: "100vh",
-    width: "100%",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    backgroundAttachment: "fixed",
-    backgroundRepeat: "no-repeat",
   },
   container: {
     width: "420px",
@@ -248,7 +220,6 @@ const styles = {
     padding: "30px 40px",
     color: "#fff",
     boxShadow: "0 0 10px #00ccff",
-    margin: "40px 0", // deixa espaço para respirar caso role
   },
   title: {
     textAlign: "center",
@@ -275,32 +246,16 @@ const styles = {
     width: "100%",
     borderRadius: "20px",
     padding: "10px",
-    color: "#ffffffff",
     fontSize: "15px",
   },
   preview: {
     display: "flex",
     marginTop: "10px",
-    flexDirection: "column",
-    alignItems: "center",
-    justifySelf: "center",
     width: "200px",
     height: "200px",
     borderRadius: "50%",
     objectFit: "cover",
     border: "3px solid #00ccff",
-  },
-  button: {
-    width: "100%",
-    padding: "12px",
-    marginTop: "10px",
-    backgroundColor: "#9100ff",
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: "16px",
-    border: "none",
-    borderRadius: "30px",
-    cursor: "pointer",
   },
   backLink: {
     display: "block",

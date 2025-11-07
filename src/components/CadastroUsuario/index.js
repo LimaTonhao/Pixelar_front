@@ -37,61 +37,54 @@ export default function CadastroUsuario() {
   };
 
   const execSubmit = async (event) => {
-  event.preventDefault();
-  setLoading(true);
-  setError("");
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
-  if (cpf.length !== 11) {
-    alert("❌| CPF inválido. O CPF deve conter 11 dígitos.");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    let fotoBase64 = null;
-    if (foto) {
-      fotoBase64 = await converterParaBase64(foto);
-    }
-
-    const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nome,
-        email,
-        cpf_cnpj: cpf,
-        senha,
-        cargo,
-        foto: fotoBase64,
-      }),
-    });
-
-    const text = await resposta.text(); // pega a resposta bruta
-    console.log("Resposta bruta do servidor:", text);
-
-    let dados;
-    try {
-      dados = JSON.parse(text); // tenta converter em JSON
-    } catch (err) {
-      console.error("❌ O servidor não retornou JSON!");
-      alert("O backend está retornando HTML — verifique se a rota existe ou se o servidor caiu.");
+    if (cpf.length !== 11) {
+      alert("❌| CPF inválido. O CPF deve conter 11 dígitos.");
+      setLoading(false);
       return;
     }
 
-    if (resposta.ok) {
-      setSuccess(true);
-      setTimeout(() => navigate("/"), 1000);
-    } else {
-      setError(dados.message || "Erro ao fazer o cadastro. Tente novamente.");
+    try {
+      let fotoBase64 = null;
+      if (foto) {
+        fotoBase64 = await converterParaBase64(foto);
+      }
+
+      const resposta = await fetch("http://localhost:3000/usuarios/cadastrar", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          nome,
+          email,
+          cpf_cnpj: cpf,
+          senha,
+          cargo,
+          foto: fotoBase64,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (resposta.ok) {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
+      } else {
+        setError(dados.message || "Erro ao fazer o cadastro. Tente novamente.");
+      }
+    } catch (e) {
+      console.error("Falha ao conectar a API:", e);
+      setError("Não foi possível conectar ao servidor.");
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    console.error("Falha ao conectar à API:", e);
-    setError("Não foi possível conectar ao servidor.");
-    alert(e.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div style={styles.background}>

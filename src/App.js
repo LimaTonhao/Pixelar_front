@@ -5,7 +5,6 @@ import Dashboard from "./components/TelaEmpresa/Dashboard";
 
 import Login from "./components/Login";
 import OpcoesU from "./components/Opcoes";
-import OpcoesE from "./components/TelaEmpresa/OpcoesE";
 import PaginaInicial from "./components/TelaEmpresa/PaginaInicial";
 import PerfilU from "./components/TelaUsuario/Perfil";
 import PerfilE from "./components/TelaEmpresa/PerfilE";
@@ -36,7 +35,6 @@ export default function App() {
         <Route path="/candidatos" element={<Candidatos />} />
         <Route path="/perfilE" element={<PerfilE />} />
         <Route path="/cadastroE" element={<CadastroEmpresa />} />
-        <Route path="/opcoesE" element={<OpcoesE />} />
 
         <Route path="/" element={<Login />} />
       </Routes>

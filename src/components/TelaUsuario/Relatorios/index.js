@@ -4,11 +4,17 @@ import styled from "styled-components";
 import Logo from "../../../img/logo.png";
 import PillNav from "../../componentesMenu/PillNav";
 import Dock from "../../componentesMenu/Dock";
-import { VscAccount } from "react-icons/vsc";
 import { FiLogOut } from "react-icons/fi";
+import { VscAccount } from "react-icons/vsc";
+
 export default function Relatorios() {
   const navigate = useNavigate();
+  const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
 
+  if (!usuario) {
+    navigate("/");
+    return;
+  }
   const handleCandidaturas = () => navigate("/candidaturaUsuario");
   const handleVagas = () => navigate("/vagasU");
   const handlePerfil = () => navigate("/perfilU");
@@ -16,7 +22,8 @@ export default function Relatorios() {
     localStorage.removeItem("usuarioLogado");
     setTimeout(() => navigate("/"), 500);
   };
-const items = [
+
+  const items = [
     {
       icon: <VscAccount size={18} />,
       label: "Perfil",

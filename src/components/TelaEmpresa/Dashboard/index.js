@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Logo from "../../../img/logo.png";
@@ -8,30 +8,165 @@ import PillNav from "../../componentesMenu/PillNav";
 import { FiLogOut } from "react-icons/fi";
 import { VscAccount } from "react-icons/vsc";
 import Dock from "../../componentesMenu/Dock";
+
 export default function Dashboard() {
+  const [vagasUsuario, setVagasUsuario] = useState([]);
+  const [vagaSelecionada, setVagaSelecionada] = useState("");
+  const [candidaturas, setCandidaturas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
+
   const navigate = useNavigate();
 
-  const handleVagas = () => navigate("/vagas");
-  const handleCandidatos = () => navigate("/candidatos");
-  const handlePerfil = () => {
-    navigate("/perfilE");
-  };
-  const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
-  if (!usuario) {
-    navigate("/");
-    return;
+  useEffect(() => {
+    const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
+    if (!usuario) {
+      navigate("/");
+      return;
+    }
+
+    const carregarDados = async () => {
+      setLoading(true);
+      setErro(null);
+
+      try {
+        const vagasRes = await fetch(
+          `http://localhost:3000/vagas/listarPorIdUsuario/${usuario.id}`
+        );
+        if (!vagasRes.ok) {
+          throw new Error("Erro ao buscar vagas da empresa");
+        }
+        const vagasData = await vagasRes.json();
+        const vagasEmpresa = Array.isArray(vagasData) ? vagasData : [];
+        setVagasUsuario(vagasEmpresa);
+
+        const candRes = await fetch(`http://localhost:3000/candidaturas/listar`);
+        if (!candRes.ok) {
+          throw new Error("Erro ao buscar candidaturas");
+        }
+        const todasCandidaturas = await candRes.json();
+        const todasArr = Array.isArray(todasCandidaturas)
+          ? todasCandidaturas
+          : [];
+
+        // 🔥 Filtra somente candidaturas das vagas do usuário
+        const idsVagasEmpresa = vagasEmpresa.map((v) => v.id_vaga);
+
+        const candidaturasFiltradas = todasArr.filter((c) =>
+          idsVagasEmpresa.includes(Number(c.id_vaga))
+        );
+
+        setCandidaturas(candidaturasFiltradas);
+      } catch (err) {
+        console.error(err);
+        setErro(err.message || "Erro ao carregar dados");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarDados();
+  }, [navigate]);
+
+  const getStatus = (c) => c.status ?? c.status_candidatura ?? "";
+
+  function totalDeCandidatos() {
+    if (!vagaSelecionada) {
+      return candidaturas.length;
+    }
+    return candidaturas.filter(
+      (c) => String(c.id_vaga) === String(vagaSelecionada)
+    ).length;
   }
+
+  function totalDeVagasPreenchidas() {
+    if (!vagaSelecionada) {
+      return candidaturas.filter((c) => getStatus(c) === "aprovado").length;
+    }
+    return candidaturas.filter(
+      (c) =>
+        String(c.id_vaga) === String(vagaSelecionada) &&
+        getStatus(c) === "aprovado"
+    ).length;
+  }
+
+  const vagasProcessadas = vagasUsuario.map((v) => {
+    const candidatosDaVaga = candidaturas.filter(
+      (c) => String(c.id_vaga) === String(v.id_vaga)
+    );
+    return {
+      id_vaga: v.id_vaga,
+      titulo: v.titulo,
+      status: v.status ?? "Em andamento",
+      total: candidatosDaVaga.length,
+      aprovados: candidatosDaVaga.filter((c) => getStatus(c) === "Aprovado")
+        .length,
+      reprovados: candidatosDaVaga.filter((c) => getStatus(c) === "Reprovado")
+        .length,
+      andamento: candidatosDaVaga.filter(
+        (c) => getStatus(c) === "Em andamento"
+      ).length,
+    };
+  });
+
+  const funil = (() => {
+    if (!vagaSelecionada) {
+      const total = candidaturas.length;
+      const aprovados = candidaturas.filter((c) => getStatus(c) === "Aprovado")
+        .length;
+      const reprovados = candidaturas.filter(
+        (c) => getStatus(c) === "Reprovado"
+      ).length;
+      const andamento = candidaturas.filter(
+        (c) => getStatus(c) === "Em andamento"
+      ).length;
+
+      return {
+        total,
+        emAndamento: andamento,
+        aprovados,
+        reprovados,
+      };
+    } else {
+      const candidatosVaga = candidaturas.filter(
+        (c) => String(c.id_vaga) === String(vagaSelecionada)
+      );
+      const total = candidatosVaga.length;
+      const aprovados = candidatosVaga.filter(
+        (c) => getStatus(c) === "Aprovado"
+      ).length;
+      const reprovados = candidatosVaga.filter(
+        (c) => getStatus(c) === "Reprovado"
+      ).length;
+      const andamento = candidatosVaga.filter(
+        (c) => getStatus(c) === "Em andamento"
+      ).length;
+
+      return {
+        total,
+        emAndamento: andamento,
+        aprovados,
+        reprovados,
+      };
+    }
+  })();
+
   const handleLogout = () => {
     localStorage.removeItem("usuarioLogado");
     setTimeout(() => navigate("/"), 500);
   };
-  const BarraNav = styled.div`
+  const handlePerfil = () => {
+    navigate("/PerfilU");
+  };
+
+  const BarraNavLocal = styled.div`
     background-color: rgba(112, 0, 216, 0);
     display: flex;
     align-items: center;
     padding: 10px 30px;
     justify-content: center;
   `;
+
   const items = [
     {
       icon: <VscAccount size={18} />,
@@ -47,7 +182,7 @@ export default function Dashboard() {
 
   return (
     <PaginaContainer>
-      <BarraNav>
+      <BarraNavLocal>
         <PillNav
           logo={Logo}
           logoAlt="Company Logo"
@@ -64,96 +199,87 @@ export default function Dashboard() {
           hoveredPillTextColor="#ffffff"
           pillTextColor="#000000"
         />
-      </BarraNav>
+      </BarraNavLocal>
 
-      {/* FILTROS */}
       <Filtros>
         <div>
-          <Rotulo>Período</Rotulo>
-          <Selecao>
-            <option>Últimos 30 dias</option>
-          </Selecao>
-        </div>
-        <div>
           <Rotulo>Projeto</Rotulo>
-          <Selecao>
-            <option>Todos os projetos</option>
-          </Selecao>
-        </div>
-        <div>
-          <Rotulo>Status</Rotulo>
-          <Selecao>
-            <option>Aberta</option>
+          <Selecao
+            value={vagaSelecionada}
+            onChange={(e) => setVagaSelecionada(e.target.value)}
+          >
+            <option value="">Todos os projetos</option>
+            {vagasUsuario.map((vaga) => (
+              <option key={vaga.id_vaga} value={vaga.id_vaga}>
+                {vaga.titulo}
+              </option>
+            ))}
           </Selecao>
         </div>
       </Filtros>
 
-      {/* CARDS */}
       <Cards>
-        <Card>
-          <h3>Total de Vagas</h3>
-          <p>
-            <strong>12</strong>
-          </p>
-          <span>4 abertas</span>
-        </Card>
         <Card>
           <h3>Candidatos Totais</h3>
           <p>
-            <strong>325</strong>
+            <strong>{loading ? "..." : totalDeCandidatos()}</strong>
           </p>
-          <span>+15 esta semana</span>
         </Card>
+
         <Card>
           <h3>Vagas Preenchidas</h3>
           <p>
-            <strong>8</strong>
+            <strong>{loading ? "..." : totalDeVagasPreenchidas()}</strong>
           </p>
-          <span>Meta: 10</span>
         </Card>
       </Cards>
 
-      {/* PAINÉIS */}
       <SecaoInferior>
         <PainelGrande>
           <h3>Funil de Recrutamento</h3>
-          <Funil />
+
+          {erro && <p style={{ color: "red" }}>{erro}</p>}
+          {loading && <p>Carregando...</p>}
+
+          <FunilContainer>
+            <BarraFunil tamanho={funil.total}>
+              <span>Aplicações: {funil.total}</span>
+            </BarraFunil>
+
+            <BarraFunil tamanho={funil.emAndamento}>
+              <span>Em Andamento: {funil.emAndamento}</span>
+            </BarraFunil>
+
+            <BarraFunil tamanho={funil.aprovados}>
+              <span>Aprovados: {funil.aprovados}</span>
+            </BarraFunil>
+
+            <BarraFunil tamanho={funil.reprovados}>
+              <span>Reprovados: {funil.reprovados}</span>
+            </BarraFunil>
+          </FunilContainer>
 
           <Tabela>
             <thead>
               <tr>
                 <th>Vaga</th>
                 <th>Status</th>
-                <th>Tempo Aberta</th>
+                <th>Candidatos</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Dev Front End</td>
-                <td>Em andamento</td>
-                <td>10 dias</td>
-              </tr>
-              <tr>
-                <td>Designer UX</td>
-                <td>Fechada</td>
-                <td>7 dias</td>
-              </tr>
+              {vagasProcessadas.map((v) => (
+                <tr key={v.id_vaga}>
+                  <td>{v.titulo}</td>
+                  <td>{v.status}</td>
+                  <td>{v.total}</td>
+                </tr>
+              ))}
             </tbody>
           </Tabela>
         </PainelGrande>
-
-        <PainelPequeno>
-          <h3>Origem dos Candidatos</h3>
-          <Donut />
-          <Alertas>
-            <strong>Tarefas / Alertas</strong>
-            <ul>
-              <li>Agendar entrevista com João L.</li>
-              <li>Vaga Dev Back-end sem candidatos há 5 dias</li>
-            </ul>
-          </Alertas>
-        </PainelPequeno>
       </SecaoInferior>
+
       <DockWrapper>
         <Dock
           items={items}
@@ -167,6 +293,25 @@ export default function Dashboard() {
 }
 
 /* ---------- ESTILOS ---------- */
+const FunilContainer = styled.div`
+  width: 100%;
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const BarraFunil = styled.div`
+  background: #6a5acd;
+  padding: 10px;
+  border-radius: 8px;
+  width: ${({ tamanho }) =>
+    tamanho === 0 ? "10%" : `${Math.min(tamanho * 10, 100)}%`};
+  transition: width 0.4s ease;
+  color: #fff;
+  font-weight: bold;
+`;
+
 const DockWrapper = styled.div`
   position: fixed;
   bottom: 0;
@@ -183,7 +328,7 @@ const PaginaContainer = styled.div`
   background-color: #ceceffff;
   min-height: 100vh;
 `;
-/* FILTROS */
+
 const Filtros = styled.div`
   display: flex;
   gap: 20px;
@@ -208,7 +353,6 @@ const Selecao = styled.select`
   width: 180px;
 `;
 
-/* CARDS */
 const Cards = styled.div`
   display: flex;
   gap: 20px;
@@ -235,14 +379,8 @@ const Card = styled.div`
     font-size: 22px;
     margin: 0;
   }
-
-  span {
-    font-size: 13px;
-    color: #555;
-  }
 `;
 
-/* PAINÉIS */
 const SecaoInferior = styled.div`
   display: flex;
   gap: 20px;
@@ -251,6 +389,8 @@ const SecaoInferior = styled.div`
   align-items: center;
   margin-right: 10px;
   margin-left: 10px;
+  width: 95%;
+  justify-self: center;
 `;
 
 const PainelGrande = styled.div`
@@ -259,14 +399,6 @@ const PainelGrande = styled.div`
   border-radius: 12px;
   flex: 2;
   min-width: 400px;
-`;
-
-const Funil = styled.div`
-  width: 100%;
-  height: 150px;
-  margin: 20px 0;
-  background: linear-gradient(to bottom, #6399ff, #3db2ff, #1ccaa5, #00cc88);
-  clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
 `;
 
 const Tabela = styled.table`
@@ -283,102 +415,4 @@ const Tabela = styled.table`
   th {
     background-color: #f3f3f3;
   }
-`;
-
-const PainelPequeno = styled.div`
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  flex: 1;
-  min-width: 300px;
-`;
-
-const Donut = styled.div`
-  width: 200px;
-  height: 200px;
-  background-color: #f0f0f0;
-  border-radius: 50%;
-  margin: 0 auto 20px auto;
-`;
-
-const Alertas = styled.div`
-  background-color: #f8f8f8;
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 14px;
-`;
-
-const TextoUsuario = styled.button`
-  padding: 5px;
-  color: #fff;
-  font-size: 20px;
-  background: transparent;
-  border: 0px;
-  font-weight: bold;
-`;
-
-const BarraNavegacao = styled.div`
-  background-color: #7000d8;
-  display: flex;
-  align-items: center;
-  padding: 10px 30px;
-  justify-content: space-between;
-`;
-
-const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const ImagemLogo = styled.img`
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  cursor: pointer;
-`;
-
-const ItensNav = styled.div`
-  display: flex;
-  gap: 15px;
-`;
-
-const BotaoNav = styled.button`
-  background-color: ${(props) => (props.ativo ? "#000" : "#b188ff")};
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  &:hover {
-    background-color: #000;
-  }
-`;
-
-const InfoUsuario = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-`;
-
-const Logout = styled.div`
-  padding: 10px;
-  border-radius: 10px;
-  background-color: rgba(207, 0, 0, 1);
-  width: 100px;
-  text-align: center;
-  height: 40px;
-  padding: 5px;
-  color: #fff;
-  font-size: 20px;
-  border: 0px;
-  font-weight: bold;
-`;
-
-const Avatar = styled.div`
-  background-color: #d2bfff;
-  border-radius: 50%;
-  padding: 10px;
-  font-size: 18px;
 `;

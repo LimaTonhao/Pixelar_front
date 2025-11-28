@@ -357,7 +357,6 @@ const handleBaixarCurriculo = async () => {
           logoAlt="Company Logo"
           items={[
             { label: "Home", href: "/vagasU" },
-            { label: "Relatórios", href: "/relatorios" },
             { label: "Candidaturas", href: "/candidaturaUsuario" },
           ]}
           activeHref="/"

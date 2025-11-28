@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Logo from "../../../img/logo.png";
 import { useNavigate } from "react-router-dom";
@@ -273,9 +272,9 @@ export default function VagasUsuario() {
                         onClick={(e) => handleInscrever(vaga.id_vaga, e)}
                         disabled={loading}
                       >
-                                               {" "}
-                        {loading ? "Inscrevendo.." : "Inscrever-se"}           
-                                 {" "}
+                                               {" "}
+                        {loading ? "Inscrevendo.." : "Inscrever-se"}           
+                                 {" "}
                       </BotaoSalvar>
                     </div>
                   </div>

@@ -141,21 +141,15 @@ export default function PerfilUsuario() {
         fotoBase64 = await converterParaBase64(foto);
       }
 
+      alert("Put atualizar perfil");
+
       const resposta = await fetch(
-        `http://localhost:3000/usuarios/atualizar/${usuarioL.id}`,
+        `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`,
         {
-          method: "PUT",
+          method: "GET",
           headers: {
             "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            nome: formDados.nome,
-            email: formDados.email,
-            cargo: formDados.cargo,
-            cpf_cnpj: formDados.cpf_cnpj,
-            senha: formDados.senha,
-            foto: fotoBase64,
-          }),
+          }
         }
       );
 
@@ -177,49 +171,77 @@ export default function PerfilUsuario() {
       setLoading(false);
     }
   };
-  const handleSalvarCurriculo = async () => {
-    setLoading(true);
-    setErro("");
-    setSuccess(false);
-    try {
 
-      if (!curriculo.file) {
+const handleSalvarCurriculo = async () => {
+  setLoading(true);
+  setErro("");
+  setSuccess(false);
+
+  try {
+    if (!curriculo.file) {
       setErro("Selecione um arquivo PDF primeiro.");
       setLoading(false);
       return;
     }
 
-      const base64 = await converterParaBase64(curriculo.file);
+    const base64 = await converterParaBase64(curriculo.file);
 
-      const resposta = await fetch(
+    // Buscar currículo existente
+    let resposta = await fetch(
+      `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`
+    );
+
+    const dados = await resposta.json();
+
+    // Existe currículo se NÃO houver erro
+    const curriculoExiste = !dados.erro;
+
+    // Se NÃO existir → POST
+    if (!curriculoExiste) {
+      resposta = await fetch(
         `http://localhost:3000/curriculos/registrar`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-           body: JSON.stringify({
-        id_usuario: usuarioL.id,
-        arquivo_curriculo: base64, // Envia em base64 para o backend
-      }),
-    });
-
-      if (resposta.ok) {
-        const dados = await resposta.json();
-        setCurriculo(dados);
-        setSuccess(true);
-      } else {
-        const erro = await resposta.text();
-        console.error("Erro ao atualizar:", erro);
-        setErro("Não foi possível conectar ao servidor.");
-      }
-    } catch (erro) {
-      console.error("Erro de conexão:", erro);
-      setErro("Não foi possível conectar ao servidor.");
-    } finally {
-      setLoading(false);
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_usuario: usuarioL.id,
+            arquivo_curriculo: base64
+          }),
+        }
+      );
     }
-  };
+
+    // Se existir → PUT usando o id_curriculo retornado
+    else {
+      resposta = await fetch(
+        `http://localhost:3000/curriculos/atualizar/${dados.id_curriculo}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            arquivo_curriculo: base64
+          }),
+        }
+      );
+    }
+
+    if (resposta.ok) {
+      const atualizado = await resposta.json();
+      setCurriculo(atualizado);
+      setSuccess(true);
+    } else {
+      setErro("Erro ao salvar currículo.");
+    }
+
+  } catch (erro) {
+    console.error("Erro:", erro);
+    setErro("Não foi possível conectar ao servidor.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const handleSalvarDescricao = async () => {
     setLoading(true);
     setErro("");

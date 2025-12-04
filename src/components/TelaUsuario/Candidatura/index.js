@@ -1,7 +1,7 @@
 import Logo from "../../../img/logo.png";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PillNav from "../../componentesMenu/PillNav";
 import Dock from "../../componentesMenu/Dock";
 import { FiLogOut } from "react-icons/fi";
@@ -91,14 +91,6 @@ const PaginaContainer = styled.div`
   font-family: Arial, sans-serif;
   background-color: #efefff;
   min-height: 100vh;
-`;
-
-const BarraNavegacao = styled.div`
-  background-color: #7000d8;
-  display: flex;
-  align-items: center;
-  padding: 10px 30px;
-  justify-content: space-between;
 `;
 
 const LogoContainer = styled.div`
@@ -271,13 +263,14 @@ export default function CandidaturaUsuario() {
   const [abaAtiva, setAbaAtiva] = useState("vagas");
 
   const [vagas, setVagas] = useState([]);
+  const [candidaturas, setCandidaturas] = useState([]);
   const [erro, setErro] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [maiorSalarioDisponivel, setMaiorSalarioDisponivel] = useState(0); // Valor inicial pode ser 0
+  const [salarioMaximo, setSalarioMaximo] = useState(0); // Valor inicial pode ser 0
+  const [setores, setSetores] = useState([]); // Valor inicial deve ser um array vazio
   const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
-  if (!usuario) {
-    navigate("/");
-    return null;
-  }
 
   const handleCandidaturas = () => {
     navigate("/candidaturaUsuario");
@@ -286,6 +279,92 @@ export default function CandidaturaUsuario() {
   const handleRelatorios = () => {
     navigate("/relatorios");
   };
+
+  useEffect(() => {
+    const fetchVagas = async () => {
+      try {
+        if (!usuario) {
+          navigate("/");
+          return null;
+        }
+        const resposta = await fetch(`http://localhost:3000/candidaturas/listarPorUsuario/${usuario.id}`);
+        if (!resposta.ok) throw new Error("Erro ao buscar vagas");
+        const dados = await resposta.json();
+        const vagasComEmpresa = await Promise.all(
+          dados.map(async (vaga) => {
+            const resUsuario = await fetch(
+              `http://localhost:3000/candidaturas/listarPorUsuario/${usuario.id}`
+            );
+            // console.log(dados);
+
+            if (!resUsuario.ok)
+              return { ...vaga, nome_empresa: "Desconhecida" };
+            const usuarioDados = await resUsuario.json();
+            return { ...vaga, nome_empresa: usuarioDados.nome };
+          })
+        );
+        console.log("Empresa da vaga:", vagas.nome_empresa);
+        setVagas(vagasComEmpresa);
+        const maiorSalario = Math.max(
+          ...vagasComEmpresa.map((v) => Number(v.salario) || 0)
+        );
+        setMaiorSalarioDisponivel(maiorSalario);
+        setSalarioMaximo(maiorSalario);
+        const setoresUnicos = [...new Set(vagasComEmpresa.map((v) => v.setor))];
+        setSetores(setoresUnicos);
+        //
+      } catch (error) {
+        setErro("Erro ao buscar vagas.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVagas();
+  }, []);
+
+  // Adicione este novo useEffect ao componente:
+
+  useEffect(() => {
+    const fetchCandidaturas = async () => {
+      if (!usuario || !usuario.id) {
+        return;
+      }
+
+      try {
+        const resposta = await fetch(
+          `http://localhost:3000/candidaturas/listarPorUsuario/${usuario.id}`
+        );
+        if (!resposta.ok) {
+          throw new Error("Erro ao buscar candidaturas.");
+        }
+        let dadosCandidaturas = await resposta.json();
+
+        // Você pode precisar buscar o nome da vaga/empresa para cada candidatura,
+        // assim como fez com as vagas
+        const candidaturasComDetalhes = await Promise.all(
+          dadosCandidaturas.map(async (candidatura) => {
+            const resVaga = await fetch(
+              `http://localhost:3000/vagas/listar/${candidatura.id_vaga}`
+            );
+            console.log(resVaga);
+           
+            if (!resVaga.ok) {
+              return { ...candidatura, titulo_vaga: "Vaga Desconhecida" };
+            }
+            const vagaDados = await resVaga.json();
+            return { ...candidatura, titulo_vaga: vagaDados.titulo };
+          })
+        );
+
+        setCandidaturas(candidaturasComDetalhes);
+      } catch (error) {
+        console.error("Erro ao buscar candidaturas:", error);
+        setErro("Erro ao carregar candidaturas.");
+      }
+    };
+
+    fetchCandidaturas();
+  }, [usuario]); // Depende do objeto 'usuario'
 
   const handleVagas = () => {
     navigate("/vagasU");
@@ -297,6 +376,11 @@ export default function CandidaturaUsuario() {
   const handlePerfil = () => {
     navigate("/perfilU");
   };
+
+  if (!usuario) {
+    navigate("/");
+    return null;
+  }
   const items = [
     {
       icon: <VscAccount size={18} />,
@@ -312,22 +396,21 @@ export default function CandidaturaUsuario() {
   return (
     <PaginaContainer>
       <BarraNav>
-        <PillNav
-          logo={Logo}
-          logoAlt="Company Logo"
-          items={[
-            { label: "Home", href: "/vagasU" },
-            { label: "Candidaturas", href: "/candidaturaUsuario" },
-          ]}
-          activeHref="/candidaturaUsuario"
-          className="custom-nav"
-          ease="power2.easeOut"
-          baseColor="#7000d8"
-          pillColor="#ffffff"
-          hoveredPillTextColor="#ffffff"
-          pillTextColor="#000000"
-        />
-      </BarraNav>
+  <PillNav
+    logo={Logo}
+    logoAlt="Company Logo"
+    items={[
+      { label: "Home", href: "/vagasU" },
+      { label: "Candidaturas", href: "/candidaturaUsuario" },
+    ]}
+    activeHref="/candidaturaUsuario"
+    ease="power2.easeOut"
+    baseColor="#7000d8"
+    pillColor="#ffffff"
+    hoveredPillTextColor="#ffffff"
+    pillTextColor="#000000"
+  />
+</BarraNav>
 
       <SubMenu>
         <Aba ativo={abaAtiva === "vagas"} onClick={() => setAbaAtiva("vagas")}>
@@ -345,38 +428,40 @@ export default function CandidaturaUsuario() {
         {abaAtiva === "vagas" ? (
           <>
             <TituloSecao>Candidaturas:</TituloSecao>
-            <GridCandidaturas>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <CardCandidatura key={i}>
-                  <TituloVaga>Vaga xxxx</TituloVaga>
-                  <p>
-                    <strong>Data de início:</strong> XX/XX/XXXX
-                  </p>
-                  <p>
-                    <strong>Status:</strong> XXXXXX
-                  </p>
-                  <p>
-                    <strong>Pontuação:</strong> XXXX
-                  </p>
-                  <p>
-                    <strong>Empresa:</strong> XXXX
-                  </p>
-                </CardCandidatura>
-              ))}
-            </GridCandidaturas>
+            {/* Exibe mensagem de erro ou de carregamento */}
+            {erro && <p style={{ color: "red" }}>{erro}</p>}
+            {candidaturas.length === 0 && !erro ? (
+              <p>Nenhuma candidatura encontrada.</p>
+            ) : (
+              <GridCandidaturas>
+                {candidaturas.map((candidatura) => (
+                  <CardCandidatura key={candidatura.id_candidatura}>
+
+                    <TituloVaga>{candidatura.titulo}</TituloVaga>
+
+<p><strong>Empresa:</strong> {candidatura.empresa}</p>
+<p><strong>Data:</strong> {new Date(candidatura.data_candidatura).toLocaleDateString()}</p>
+<p><strong>Status:</strong> {candidatura.status_candidatura}</p>
+<p><strong>Pontuação:</strong> {candidatura.pontuacao ?? "Indefinida"}</p>
+                  </CardCandidatura>
+                ))}
+              </GridCandidaturas>
+            )}
           </>
         ) : (
           <TriagemLayout>
+            
             <Coluna1>
               <TituloSecao>Jornadas:</TituloSecao>
               <GridJornadas>
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <CardJornada key={i}>
-                    Vaga xxxx
-                    <br />
-                    <BotaoTarefa>Tarefa</BotaoTarefa>
-                  </CardJornada>
-                ))}
+                {candidaturas.map((c) => (
+  <CardJornada key={c.id_candidatura}>
+    {c.titulo}
+    <br />
+    <BotaoTarefa onClick={() => window.open(`https://forms.office.com/Pages/ResponsePage.aspx?id=SxwFsZQ7q0GUQec6cjQv3SMiNkdyBb5CmbJDi4HjCstUNTU3T08zR0c2VTlJV0Q1NzdaSFVaOFpHNS4u`)}>Tarefa</BotaoTarefa>
+  </CardJornada>
+))}
+
               </GridJornadas>
             </Coluna1>
           </TriagemLayout>

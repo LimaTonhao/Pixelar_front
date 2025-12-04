@@ -37,7 +37,7 @@ export default function PerfilUsuario() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [curriculo, setCurriculo] = useState("");
-
+  const [nomePerfil, setNomePerfil] = useState("");
   const navigate = useNavigate();
   const usuarioL = JSON.parse(localStorage.getItem("usuarioLogado"));
   if (!usuarioL) {
@@ -131,117 +131,6 @@ export default function PerfilUsuario() {
     fetchUsuario();
   }, [usuarioL.id]);
 
-  const handleSalvarPerfil = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setErro("");
-    try {
-      let fotoBase64 = null;
-      if (foto) {
-        fotoBase64 = await converterParaBase64(foto);
-      }
-
-      alert("Put atualizar perfil");
-
-      const resposta = await fetch(
-        `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          }
-        }
-      );
-
-      if (resposta.ok) {
-        const dados = await resposta.json();
-        setUsuario(dados);
-
-        setAbrirEditar(false);
-        setSuccess(true);
-      } else {
-        const erro = await resposta.text();
-        console.error("Erro ao atualizar:", erro);
-        setErro(erro.message || "Erro ao atualizar o Perfil. Tente novamente.");
-      }
-    } catch (erro) {
-      console.error("Erro de conexão:", erro);
-      setErro("Não foi possível conectar ao servidor.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-const handleSalvarCurriculo = async () => {
-  setLoading(true);
-  setErro("");
-  setSuccess(false);
-
-  try {
-    if (!curriculo.file) {
-      setErro("Selecione um arquivo PDF primeiro.");
-      setLoading(false);
-      return;
-    }
-
-    const base64 = await converterParaBase64(curriculo.file);
-
-    // Buscar currículo existente
-    let resposta = await fetch(
-      `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`
-    );
-
-    const dados = await resposta.json();
-
-    // Existe currículo se NÃO houver erro
-    const curriculoExiste = !dados.erro;
-
-    // Se NÃO existir → POST
-    if (!curriculoExiste) {
-      resposta = await fetch(
-        `http://localhost:3000/curriculos/registrar`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id_usuario: usuarioL.id,
-            arquivo_curriculo: base64
-          }),
-        }
-      );
-    }
-
-    // Se existir → PUT usando o id_curriculo retornado
-    else {
-      resposta = await fetch(
-        `http://localhost:3000/curriculos/atualizar/${dados.id_curriculo}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            arquivo_curriculo: base64
-          }),
-        }
-      );
-    }
-
-    if (resposta.ok) {
-      const atualizado = await resposta.json();
-      setCurriculo(atualizado);
-      setSuccess(true);
-    } else {
-      setErro("Erro ao salvar currículo.");
-    }
-
-  } catch (erro) {
-    console.error("Erro:", erro);
-    setErro("Não foi possível conectar ao servidor.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
   const handleSalvarDescricao = async () => {
     setLoading(true);
     setErro("");
@@ -260,19 +149,32 @@ const handleSalvarCurriculo = async () => {
       );
 
       if (resposta.ok) {
-        const dadosAtualizados = await fetch(
+        const resAtualizado = await fetch(
           `http://localhost:3000/usuarios/buscarPorId/${usuarioL.id}`
         );
-        const usuarioAtualizado = await dadosAtualizados.json();
+        const usuarioAtualizado = await resAtualizado.json();
 
         setDescricao_perfil(usuarioAtualizado.descricao_perfil);
-        setSuccess(true);
 
-      
-        setTimeout(() => {
-          setEditando(false);
-          setSuccess(false);
-        }, 500);
+        setFormDados({
+          id_usuario: usuarioL.id,
+          nome: usuarioAtualizado.nome,
+          email: usuarioAtualizado.email,
+          cargo: usuarioAtualizado.cargo,
+          cpf_cnpj: usuarioAtualizado.cpf_cnpj,
+          senha: "",
+        });
+
+        setNomePerfil(usuarioAtualizado.nome);
+        setFoto({
+          preview: usuarioAtualizado.foto,
+          file: null,
+        });
+
+        setSuccess(true);
+        setAbrirEditar(false);
+
+        setEditando(false);
       } else {
         const erro = await resposta.text();
         console.error("Erro ao atualizar descrição do perfil:", erro);
@@ -286,59 +188,85 @@ const handleSalvarCurriculo = async () => {
     }
   };
 
-  // --- EXIBIR CURRÍCULO CADASTRADO ---
-const handleBaixarCurriculo = async () => {
-  try {
+  const [cargo, setCargo] = useState("");
+  const [foto, setFoto] = useState("");
+  const handleSalvarPerfil = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setErro("");
 
-    const resposta = await fetch(
-      `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`
-    );
+    try {
+      let fotoBase64 = null;
 
-    if (!resposta.ok) {
-      throw new Error("Currículo não encontrado para este usuário.");
+      if (foto.file) {
+        fotoBase64 = await converterParaBase64(foto.file);
+      }
+
+      const resposta = await fetch(
+        `http://localhost:3000/usuarios/atualizar/${usuarioL.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nome: formDados.nome,
+            email: formDados.email,
+            cargo: formDados.cargo,
+            cpf_cnpj: formDados.cpf_cnpj,
+            senha: formDados.senha,
+            foto: fotoBase64,
+          }),
+        }
+      );
+
+      if (resposta.ok) {
+        setSuccess(true);
+        setNomePerfil(resposta.nome);
+        setAbrirEditar(false);
+      } else {
+        setErro("Erro ao atualizar o Perfil.");
+      }
+    } catch (erro) {
+      console.error("Erro de conexão:", erro);
+      setErro("Não foi possível conectar ao servidor.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const dados = await resposta.json();
-
-    // Caso o backend retorne a URL do arquivo (ex: arquivo_url)
-    if (dados.arquivo_url) {
-      window.open(dados.arquivo_url, "_blank"); // abre em nova aba
-    } else if (dados.arquivo_curriculo) {
-      // Se veio em base64
-      const link = document.createElement("a");
-      link.href = dados.arquivo_curriculo;
-      link.download = "curriculo.pdf";
-      link.click();
-    } else {
-      throw new Error("Nenhum arquivo de currículo encontrado.");
-    }
-  } catch (error) {
-    console.error(error);
-    setErro("Não foi possível carregar o currículo.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const [cargo, setCargo] = useState("");
-  const [foto, setFoto] = useState("");
   useEffect(() => {
-    if (!usuarioL) {
-      navigate("/");
-      return null;
-    }
     const fetchCargo = async () => {
+      if (!usuarioL) {
+        navigate("/");
+        return;
+      }
+
       try {
         const resposta = await fetch(
           `http://localhost:3000/usuarios/buscarPorId/${usuarioL.id}`
         );
+
         if (resposta.ok) {
           const dados = await resposta.json();
+
           setCargo(dados);
-          setFoto(dados);
-          console.log(setFoto);
+          setNomePerfil(dados.nome);
+          // FOTO SALVA NO BANCO
+          setFoto({
+            preview: dados.foto || "",
+            file: null,
+          });
+
+          // Preenche inputs
+          setFormDados({
+            id_usuario: usuarioL.id,
+            nome: dados.nome,
+            email: dados.email,
+            cargo: dados.cargo,
+            cpf_cnpj: dados.cpf_cnpj,
+            senha: "",
+          });
         }
       } catch (error) {
         console.error("Erro ao buscar usuário por ID:", error);
@@ -346,7 +274,107 @@ const handleBaixarCurriculo = async () => {
     };
 
     fetchCargo();
-  }, [usuario.id]);
+  }, [usuarioL.id]);
+
+  const handleSalvarCurriculo = async () => {
+    setLoading(true);
+    setErro("");
+    setSuccess(false);
+
+    try {
+      if (!curriculo.file) {
+        setErro("Selecione um arquivo PDF primeiro.");
+        setLoading(false);
+        return;
+      }
+
+      const base64 = await converterParaBase64(curriculo.file);
+
+      // Buscar currículo existente
+      let resposta = await fetch(
+        `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`
+      );
+
+      const dados = await resposta.json();
+
+      // Existe currículo se NÃO houver erro
+      const curriculoExiste = !dados.erro;
+
+      // Se NÃO existir → POST
+      if (!curriculoExiste) {
+        resposta = await fetch(`http://localhost:3000/curriculos/registrar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_usuario: usuarioL.id,
+            arquivo_curriculo: base64,
+          }),
+        });
+      }
+
+      // Se existir → PUT usando o id_curriculo retornado
+      else {
+        resposta = await fetch(
+          `http://localhost:3000/curriculos/atualizar/${dados.id_curriculo}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              arquivo_curriculo: base64,
+            }),
+          }
+        );
+      }
+
+      if (resposta.ok) {
+        const atualizado = await resposta.json();
+        setCurriculo(atualizado);
+        setSuccess(true);
+      } else {
+        setErro("Erro ao salvar currículo.");
+      }
+    } catch (erro) {
+      console.error("Erro:", erro);
+      setErro("Não foi possível conectar ao servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  // --- EXIBIR CURRÍCULO CADASTRADO ---
+  const handleBaixarCurriculo = async () => {
+    try {
+      setLoading(true);
+      setErro("");
+
+      const resposta = await fetch(
+        `http://localhost:3000/curriculos/buscarPorUsuario/${usuarioL.id}`
+      );
+
+      if (!resposta.ok) {
+        throw new Error("Currículo não encontrado para este usuário.");
+      }
+
+      const dados = await resposta.json();
+
+      // Caso o backend retorne a URL do arquivo (ex: arquivo_url)
+      if (dados.arquivo_url) {
+        window.open(dados.arquivo_url, "_blank"); // abre em nova aba
+      } else if (dados.arquivo_curriculo) {
+        // Se veio em base64
+        const link = document.createElement("a");
+        link.href = dados.arquivo_curriculo;
+        link.download = "curriculo.pdf";
+        link.click();
+      } else {
+        throw new Error("Nenhum arquivo de currículo encontrado.");
+      }
+    } catch (error) {
+      console.error(error);
+      setErro("Não foi possível carregar o currículo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <PaginaContainer>
@@ -372,8 +400,8 @@ const handleBaixarCurriculo = async () => {
       {/* CONTEÚDO PERFIL */}
       <Conteudo>
         <ProfileContainer>
-          <FotoPerfil src={foto.foto} alt="Foto de perfil" />
-          <Nome>{usuarioL.nome}</Nome>
+          <FotoPerfil src={foto.preview} alt="Foto de perfil" />
+          <Nome>{nomePerfil}</Nome>
           <Cargo>{cargo.cargo}</Cargo>
           <Botoes>
             <Popup
@@ -472,7 +500,7 @@ const handleBaixarCurriculo = async () => {
                               email: e.target.value,
                             })
                           }
-                          placeholder="E-mail"  
+                          placeholder="E-mail"
                           required
                         />
                         <Input
@@ -607,9 +635,6 @@ const handleBaixarCurriculo = async () => {
               )}
             </Popup>
 
-
-
-
             {/* <BotaoConfig>
               {" "}
               <h6>Atualizar Currículo</h6>
@@ -617,12 +642,10 @@ const handleBaixarCurriculo = async () => {
             </BotaoConfig> */}
           </Botoes>
 
-                            {/* 🔽 Novo botão logo abaixo */}
-  <ExibeCurriculo onClick={handleBaixarCurriculo}>
-    <AiFillFileText size={20} />
-    {loading ? "Carregando..." : "Exibir Currículo"}
-  </ExibeCurriculo>
-
+          <ExibeCurriculo onClick={handleBaixarCurriculo}>
+            <AiFillFileText size={20} />
+            {loading ? "Carregando..." : "Exibir Currículo"}
+          </ExibeCurriculo>
         </ProfileContainer>
 
         <ResumoBox>

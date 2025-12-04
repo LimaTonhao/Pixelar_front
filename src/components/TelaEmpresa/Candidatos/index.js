@@ -180,6 +180,7 @@ const Pontuacao2 = styled.div`
   color: #333;
 `;
 
+
 const PopupCard = styled.div`
   background: rgba(83, 42, 147, 1);
   border-radius: 20px;
@@ -191,6 +192,15 @@ const PopupCard = styled.div`
   flex-direction: column;
   align-items: center;
 `;
+
+const PopupWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+`;
+
 
 const InfoBox = styled.div`
   margin: 15px 0;
@@ -237,9 +247,15 @@ const Corpo = styled.div`
 `;
 
 const BarraNav = styled.div`
-  display: flex;
-  justify-content: center;
-  padding: 20px;
+background-color: rgba(112, 0, 216, 0);
+    display: flex;
+    align-items: center;
+    padding: 10px 30px;
+    justify-content: center;
+
+     * {
+    font-weight: bold !important;
+  }
 `;
 
 const DockWrapper = styled.div`
@@ -445,7 +461,7 @@ export default function Candidatos() {
                             <Nome>{user ? user.nome : "Usuário"}</Nome>
                             <Pontuacao2>
                               Pontuação:{" "}
-                              {cand.pontuacao ? `${cand.pontuacao}%` : "N/A"}
+                              {cand.pontuacao ? `${cand.pontuacao}` : "Indefinida"}
                             </Pontuacao2>
                           </NomePontuacao>
                         </InfoCandidato>
@@ -459,8 +475,16 @@ export default function Candidatos() {
                             }
                             modal
                             nested
+                            contentStyle={{ 
+  background: "transparent", 
+  boxShadow: "none",
+  border: "none",
+  padding: 0 
+}}
+
                           >
                             {(close) => (
+                              <PopupWrapper>
                               <PopupCard>
                                 <Fechar onClick={close}>
                                   <IoMdClose size={30} />
@@ -481,12 +505,18 @@ export default function Candidatos() {
                                       cand.nome_vaga ||
                                       cand.id_vaga}
                                   </p>
-                                  <p>Data: {cand.data_candidatura}</p>
+                                  <p>
+  Data:{" "}
+  {cand.data
+    ? new Date(cand.data).toLocaleDateString("pt-BR")
+    : "Não encontrada"}
+</p>
+
                                   <p>
                                     Pontuação:{" "}
                                     {cand.pontuacao
-                                      ? `${cand.pontuacao}%`
-                                      : "N/A"}
+                                      ? `${cand.pontuacao}`
+                                      : "Indefinida"}
                                   </p>
                                 </InfoBox>
 
@@ -550,6 +580,7 @@ export default function Candidatos() {
                                   </EditarWrapper>
                                 )}
                               </PopupCard>
+                              </PopupWrapper>
                             )}
                           </Popup>
                         </Acoes>
